@@ -281,9 +281,15 @@ public class UsersController : ControllerBase
             });
 
         var deleted = await _userService.DeleteUserAsync(id);
-
+        var response = ApiResponse<bool>.SuccessResponse(
+                true,
+                "Usuario eliminado correctamente"
+            );
         if (deleted)
-            return NoContent();
+            return CreatedAtAction(
+                nameof(GetUserById),
+                response
+            );
 
         return NotFound(new ApiResponse<object>
         {

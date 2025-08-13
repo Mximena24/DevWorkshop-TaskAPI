@@ -65,6 +65,4 @@ public class User
     /// </summary>
     public string FullName => $"{FirstName} {LastName}".Trim();
 
-    public bool IsActive { get; set; } = true;
-
 }

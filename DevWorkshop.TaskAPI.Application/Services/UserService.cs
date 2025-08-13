@@ -36,7 +36,6 @@ public class UserService : IUserService
 
             // 1. Consultar la base de datos para obtener usuarios donde IsActive = true
             var users = (await _unitOfWork.Users.GetAllAsync())
-                .Where(u => u.IsActive)
                 .ToList();
 
             // 2. Mapear las entidades User a UserDto usando AutoMapper
@@ -63,9 +62,9 @@ public class UserService : IUserService
             var user = await _unitOfWork.Users.GetByIdAsync(userId);
 
             // 2. Verificar que el usuario existe y está activo
-            if (user == null || !user.IsActive)
+            if (user == null)
             {
-                _logger.LogWarning("Usuario no encontrado o inactivo con ID: {UserId}", userId);
+                _logger.LogWarning("Usuario no encontrado: {UserId}", userId);
                 return null;
             }
 
@@ -93,9 +92,9 @@ public class UserService : IUserService
                 .FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
 
             // 2. Verificar que el usuario existe y está activo
-            if (user == null || !user.IsActive)
+            if (user == null)
             {
-                _logger.LogWarning("Usuario no encontrado o inactivo con email: {Email}", email);
+                _logger.LogWarning("Usuario no encontrado con email: {Email}", email);
                 return null;
             }
 
@@ -119,7 +118,7 @@ public class UserService : IUserService
             _logger.LogInformation("Obteniendo usuarios por RoleId: {RoleId}", roleId);
 
             // Obtener usuarios activos con el rol especificado
-            var users = await _unitOfWork.Users.FindAsync(u => u.RoleId == roleId && u.IsActive);
+            var users = await _unitOfWork.Users.FindAsync(u => u.RoleId == roleId);
 
             var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
 
@@ -266,14 +265,11 @@ public class UserService : IUserService
                 return false;
             }
 
-            // 3. Establecer IsActive = false (soft delete)
-            user.IsActive = false;
-
             // 4. Establecer UpdatedAt = DateTime.UtcNow
             user.UpdatedAt = DateTime.UtcNow;
 
             // 5. Guardar cambios en la base de datos
-            _unitOfWork.Users.Update(user);
+            _unitOfWork.Users.Remove(user);
             await _unitOfWork.SaveChangesAsync();
 
             // 6. Retornar true si se eliminó correctamente
@@ -320,7 +316,7 @@ public class UserService : IUserService
             _logger.LogInformation("Obteniendo estadísticas de usuarios");
 
             var allUsers = await _unitOfWork.Users.GetAllAsync();
-            var activeUsers = allUsers.Where(u => u.IsActive).ToList();
+            var activeUsers = allUsers.ToList();
             var totalUsers = activeUsers.Count;
             var usersByRole = activeUsers
                 .GroupBy(u => u.RoleId)
