@@ -17,7 +17,7 @@ public class UserService : IUserService
     private readonly ILogger<UserService> _logger;
 
 
-    public UserService (IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger)
     {
         // TODO: ESTUDIANTE - Configurar las dependencias inyectadas
         _unitOfWork = unitOfWork;
@@ -28,55 +28,111 @@ public class UserService : IUserService
     /// <summary>
     /// TODO: ESTUDIANTE - Implementar la obtención de todos los usuarios activos
     /// 
-    /// Pasos a seguir:
-    /// 1. Consultar la base de datos para obtener usuarios donde IsActive = true
-    /// 2. Mapear las entidades User a UserDto usando AutoMapper
-    /// 3. Retornar la lista de usuarios
-    /// 
-    /// Tip: Usar async/await y ToListAsync() para operaciones asíncronas
-    /// </summary>
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Obteniendo todos los usuarios activos");
+
+            // 1. Consultar la base de datos para obtener usuarios donde IsActive = true
+            var users = (await _unitOfWork.Users.GetAllAsync())
+                .Where(u => u.IsActive)
+                .ToList();
+
+            // 2. Mapear las entidades User a UserDto usando AutoMapper
+            var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
+
+            // 3. Retornar la lista de usuarios
+            return userDtos;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener la lista de usuarios activos");
+            throw;
+        }
     }
 
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la búsqueda de usuario por ID
-    /// 
-    /// Pasos a seguir:
-    /// 1. Buscar el usuario en la base de datos por UserId
-    /// 2. Verificar que el usuario existe y está activo
-    /// 3. Mapear la entidad a UserDto
-    /// 4. Retornar el usuario o null si no existe
-    /// </summary>
+
     public async Task<UserDto?> GetUserByIdAsync(int userId)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Buscando usuario por ID: {UserId}", userId);
+
+            // 1. Buscar el usuario en la base de datos por UserId
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+
+            // 2. Verificar que el usuario existe y está activo
+            if (user == null || !user.IsActive)
+            {
+                _logger.LogWarning("Usuario no encontrado o inactivo con ID: {UserId}", userId);
+                return null;
+            }
+
+            // 3. Mapear la entidad a UserDto
+            var userDto = _mapper.Map<UserDto>(user);
+
+            // 4. Retornar el usuario o null si no existe
+            return userDto;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error buscando usuario por ID: {UserId}", userId);
+            throw;
+        }
     }
 
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la búsqueda de usuario por email
-    /// 
-    /// Pasos a seguir:
-    /// 1. Buscar el usuario en la base de datos por Email
-    /// 2. Verificar que el usuario existe y está activo
-    /// 3. Mapear la entidad a UserDto
-    /// 4. Retornar el usuario o null si no existe
-    /// </summary>
     public async Task<UserDto?> GetUserByEmailAsync(string email)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Buscando usuario por email: {Email}", email);
+
+            // 1. Buscar el usuario en la base de datos por Email
+            var user = (await _unitOfWork.Users.GetAllAsync())
+                .FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+
+            // 2. Verificar que el usuario existe y está activo
+            if (user == null || !user.IsActive)
+            {
+                _logger.LogWarning("Usuario no encontrado o inactivo con email: {Email}", email);
+                return null;
+            }
+
+            // 3. Mapear la entidad a UserDto
+            var userDto = _mapper.Map<UserDto>(user);
+
+            // 4. Retornar el usuario o null si no existe
+            return userDto;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error buscando usuario por email: {Email}", email);
+            throw;
+        }
     }
 
-    
-    /// 3. Crear una nueva entidad User con los datos del DTO
-    /// 4. Establecer CreatedAt = DateTime.UtcNow e IsActive = true
-    /// 5. Guardar en la base de datos
-    /// 6. Mapear la entidad creada a UserDto y retornar
-    /// </summary>
+    public async Task<IEnumerable<UserDto>> GetUsersByRoleAsync(int roleId)
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo usuarios por RoleId: {RoleId}", roleId);
+
+            // Obtener usuarios activos con el rol especificado
+            var users = await _unitOfWork.Users.FindAsync(u => u.RoleId == roleId && u.IsActive);
+
+            var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
+
+            return userDtos;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error obteniendo usuarios por RoleId: {RoleId}", roleId);
+            throw;
+        }
+    }
+
+
     public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
     {   // TODO: ESTUDIANTE - Implementar lógica
         // 1. Validar que el email no esté en uso
@@ -98,7 +154,7 @@ public class UserService : IUserService
             user.Email = emailformat;
             user.PasswordHash = passwordHash;
             user.CreatedAt = DateTime.Now;
-            user.UpdatedAt = DateTime.Now; 
+            user.UpdatedAt = DateTime.Now;
             user.LastTokenIssueAt = DateTime.Now;
             user.RoleId = 4;
 
@@ -120,57 +176,168 @@ public class UserService : IUserService
     }
     public async Task<bool> EmailExistsAsync(string email)
     {
-        _logger.LogInformation("Verificando si el email existe: {Email}", email);
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            var emailFormat = email.Trim().ToLower();
+            _logger.LogInformation("Verificando si el email {Email} ya existe", emailFormat);
+
+            var users = await _unitOfWork.Users.GetAllAsync();
+            return users.Any(u => u.Email == emailFormat);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verificando email: {Email}", email);
+            throw;
+        }
     }
 
-
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la actualización de un usuario
-    /// 
-    /// Pasos a seguir:
-    /// 1. Buscar el usuario existente por ID
-    /// 2. Verificar que el usuario existe
-    /// 3. Si se actualiza el email, validar que no esté en uso por otro usuario
-    /// 4. Actualizar solo los campos que no sean null en el DTO
-    /// 5. Establecer UpdatedAt = DateTime.UtcNow
-    /// 6. Guardar cambios en la base de datos
-    /// 7. Mapear y retornar el usuario actualizado
-    /// </summary>
-    public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
+    public async Task<UserDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Iniciando actualización del usuario con ID {UserId}", id);
+
+            // 1. Buscar el usuario existente por ID
+            var user = await _unitOfWork.Users.GetByIdAsync(id);
+
+            // 2. Verificar que el usuario existe
+            if (user == null)
+            {
+                _logger.LogWarning("No se encontró el usuario con ID {UserId}", id);
+                return null;
+            }
+
+            // 3. Si se actualiza el email, validar que no esté en uso por otro usuario
+            if (!string.IsNullOrWhiteSpace(updateUserDto.Email))
+            {
+                var emailExists = await EmailExistsAsync(updateUserDto.Email);
+                if (emailExists && !string.Equals(user.Email, updateUserDto.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("El email {Email} ya está en uso", updateUserDto.Email);
+                    throw new InvalidOperationException("El correo ya está en uso por otro usuario.");
+                }
+                user.Email = updateUserDto.Email.Trim().ToLower();
+            }
+
+            // 4. Actualizar solo los campos que no sean null en el DTO
+            if (!string.IsNullOrWhiteSpace(updateUserDto.FirstName))
+                user.FirstName = updateUserDto.FirstName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(updateUserDto.LastName))
+                user.LastName = updateUserDto.LastName.Trim();
+
+            if (updateUserDto.RoleId.HasValue)
+                user.RoleId = updateUserDto.RoleId;
+
+            if (updateUserDto.TeamId.HasValue)
+                user.TeamId = updateUserDto.TeamId;
+
+            // 5. Establecer UpdatedAt = DateTime.UtcNow
+            user.UpdatedAt = DateTime.UtcNow;
+
+            // 6. Guardar cambios en la base de datos
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            // 7. Mapear y retornar el usuario actualizado
+            _logger.LogInformation("Usuario con ID {UserId} actualizado correctamente", id);
+            return _mapper.Map<UserDto>(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error actualizando el usuario con ID {UserId}", id);
+            throw;
+        }
     }
 
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la eliminación lógica de un usuario
-    /// 
-    /// Pasos a seguir:
-    /// 1. Buscar el usuario por ID
-    /// 2. Verificar que el usuario existe
-    /// 3. Establecer IsActive = false (soft delete)
-    /// 4. Establecer UpdatedAt = DateTime.UtcNow
-    /// 5. Guardar cambios en la base de datos
-    /// 6. Retornar true si se eliminó correctamente
-    /// </summary>
     public async Task<bool> DeleteUserAsync(int userId)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Iniciando eliminación lógica del usuario con ID {UserId}", userId);
+
+            // 1. Buscar el usuario por ID
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+
+            // 2. Verificar que el usuario existe
+            if (user == null)
+            {
+                _logger.LogWarning("No se encontró el usuario con ID {UserId}", userId);
+                return false;
+            }
+
+            // 3. Establecer IsActive = false (soft delete)
+            user.IsActive = false;
+
+            // 4. Establecer UpdatedAt = DateTime.UtcNow
+            user.UpdatedAt = DateTime.UtcNow;
+
+            // 5. Guardar cambios en la base de datos
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            // 6. Retornar true si se eliminó correctamente
+            _logger.LogInformation("Usuario con ID {UserId} eliminado lógicamente correctamente", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error eliminando lógicamente el usuario con ID {UserId}", userId);
+            throw;
+        }
     }
 
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la verificación de email existente
-    /// 
-    /// Pasos a seguir:
-    /// 1. Buscar usuarios con el email especificado
-    /// 2. Si se proporciona excludeUserId, excluir ese usuario de la búsqueda
-    /// 3. Retornar true si existe algún usuario con ese email
-    /// </summary>
+
     public async Task<bool> EmailExistsAsync(string email, int? excludeUserId = null)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
-        throw new NotImplementedException("Método pendiente de implementación por el estudiante");
+        try
+        {
+            _logger.LogInformation("Verificando si el email {Email} ya existe", email);
+
+            // 1. Buscar usuarios con el email especificado
+            var users = await _unitOfWork.Users.GetAllAsync();
+
+            // 2. Si se proporciona excludeUserId, excluir ese usuario de la búsqueda
+            if (excludeUserId.HasValue)
+            {
+                users = users.Where(u => u.UserId != excludeUserId.Value).ToList();
+            }
+
+            // 3. Retornar true si existe algún usuario con ese email
+            return users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verificando si existe el email {Email}", email);
+            throw;
+        }
+    }
+
+    public async Task<object> GetUserStatisticsAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Obteniendo estadísticas de usuarios");
+
+            var allUsers = await _unitOfWork.Users.GetAllAsync();
+            var activeUsers = allUsers.Where(u => u.IsActive).ToList();
+            var totalUsers = activeUsers.Count;
+            var usersByRole = activeUsers
+                .GroupBy(u => u.RoleId)
+                .ToDictionary(g => g.Key, g => g.Count());
+            var usersLastMonth = activeUsers.Count(u => u.CreatedAt >= DateTime.UtcNow.AddMonths(-1));
+
+            return new
+            {
+                TotalUsers = totalUsers,
+                UsersByRole = usersByRole,
+                UsersLastMonth = usersLastMonth
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error obteniendo estadísticas de usuarios");
+            throw;
+        }
     }
 }

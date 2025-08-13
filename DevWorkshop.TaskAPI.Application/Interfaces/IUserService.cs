@@ -56,4 +56,10 @@ public interface IUserService
     /// <param name="excludeUserId">ID de usuario a excluir de la verificación</param>
     /// <returns>True si el email está en uso</returns>
     Task<bool> EmailExistsAsync(string email, int? excludeUserId = null);
+
+    Task<IEnumerable<UserDto>> GetUsersByRoleAsync(int roleId);
+
+    // Obtiene estadísticas generales de usuarios
+    Task<object> GetUserStatisticsAsync();
+
 }

@@ -34,6 +34,7 @@ public interface IRepository<T> where T : class
     /// <param name="predicate">Condición de búsqueda</param>
     /// <returns>Primera entidad que cumple la condición o null</returns>
     Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+     
 
     /// <summary>
     /// Agrega una nueva entidad
