@@ -15,10 +15,14 @@ namespace DevWorkshop.TaskAPI.Api.Controllers;
 public class UsersController : ControllerBase
 {
     // TODO: ESTUDIANTE - Inyectar IUserService y ILogger
-    
-    public UsersController()
+    private readonly IUserService _userService;
+    private readonly ILogger<UsersController> _logger;
+
+    public UsersController(IUserService userService, ILogger<UsersController> logger)
     {
         // TODO: ESTUDIANTE - Configurar las dependencias inyectadas
+        _userService = userService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -80,8 +84,70 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<ApiResponse<UserDto>>> CreateUser([FromBody] CreateUserDto createUserDto)
     {
         // TODO: ESTUDIANTE - Implementar lógica del controlador
-        throw new NotImplementedException("Endpoint pendiente de implementación por el estudiante");
+        try
+        {
+            // Validar el modelo de entrada
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Intento de crear usuario con datos inválidos: {Errors}",
+                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+
+                return BadRequest(ApiResponse<UserDto>.ErrorResponse(
+                    "Datos de entrada inválidos",
+                    ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+                ));
+            }
+
+            // Crear el usuario usando el servicio
+            var user = await _userService.CreateUserAsync(createUserDto);
+
+            // Crear respuesta exitosa
+            var response = ApiResponse<UserDto>.SuccessResponse(
+                user,
+                "Usuario creado correctamente"
+            );
+
+            _logger.LogInformation("Usuario creado exitosamente: {Email} con ID: {UserId}",
+                user.Email, user.UserId);
+
+            // Retornar 201 Created con la ubicación del recurso creado
+            return CreatedAtAction(
+                nameof(GetUserById),
+                new { id = user.UserId },
+                response
+            );
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("email ya está en uso"))
+        {
+            // Manejar conflicto de emails duplicados
+            _logger.LogWarning("Conflicto al crear usuario: {Message}", ex.Message);
+
+            return Conflict(ApiResponse<UserDto>.ErrorResponse(
+                "Email duplicado",
+                ex.Message
+            ));
+        }
+        catch (AutoMapper.AutoMapperMappingException ex)
+        {
+            // Manejar errores de mapeo de AutoMapper
+            _logger.LogError(ex, "Error de mapeo AutoMapper al crear usuario: {Email}", createUserDto?.Email ?? "Unknown");
+
+            return StatusCode(500, ApiResponse<UserDto>.ErrorResponse(
+                "Error de configuración",
+                "Error en el mapeo de datos. Contacte al administrador."
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error interno al crear usuario: {Email}", createUserDto?.Email ?? "Unknown");
+
+            return StatusCode(500, ApiResponse<UserDto>.ErrorResponse(
+                "Error interno del servidor",
+                $"Ocurrió un error inesperado: {ex.Message}"
+            ));
+        }
     }
+
 
     /// <summary>
     /// TODO: ESTUDIANTE - Implementar la actualización de un usuario
