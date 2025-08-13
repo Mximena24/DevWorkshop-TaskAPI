@@ -1,5 +1,8 @@
+using AutoMapper;
 using DevWorkshop.TaskAPI.Application.DTOs.Users;
 using DevWorkshop.TaskAPI.Application.Interfaces;
+using DevWorkshop.TaskAPI.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace DevWorkshop.TaskAPI.Application.Services;
 
@@ -9,10 +12,17 @@ namespace DevWorkshop.TaskAPI.Application.Services;
 public class UserService : IUserService
 {
     // TODO: ESTUDIANTE - Inyectar dependencias necesarias (DbContext, AutoMapper, Logger)
-    
-    public UserService()
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly ILogger<UserService> _logger;
+
+
+    public UserService (IUnitOfWork unitOfWork, IMapper mapper, ILogger<UserService> logger)
     {
         // TODO: ESTUDIANTE - Configurar las dependencias inyectadas
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
+        _logger = logger;
     }
 
     /// <summary>
@@ -61,22 +71,59 @@ public class UserService : IUserService
         throw new NotImplementedException("Método pendiente de implementación por el estudiante");
     }
 
-    /// <summary>
-    /// TODO: ESTUDIANTE - Implementar la creación de un nuevo usuario
-    /// 
-    /// Pasos a seguir:
-    /// 1. Validar que el email no esté en uso
-    /// 2. Hashear la contraseña usando BCrypt
+    
     /// 3. Crear una nueva entidad User con los datos del DTO
     /// 4. Establecer CreatedAt = DateTime.UtcNow e IsActive = true
     /// 5. Guardar en la base de datos
     /// 6. Mapear la entidad creada a UserDto y retornar
     /// </summary>
     public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
+    {   // TODO: ESTUDIANTE - Implementar lógica
+        // 1. Validar que el email no esté en uso
+        try
+        {
+            _logger.LogInformation("Iniciando creación de usuario con email: {Email}", createUserDto.Email);
+            var emailformat = createUserDto.Email.Trim().ToLower();
+            var validuser = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Email == emailformat);
+            if (validuser != null)
+            {
+                throw new InvalidOperationException("Usuario ya creado");
+            }
+
+            // 2. Hashear la contraseña usando BCrypt
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password);
+
+            // 3. Crear una nueva entidad User con los datos del DTO
+            var user = _mapper.Map<User>(createUserDto);
+            user.Email = emailformat;
+            user.PasswordHash = passwordHash;
+            user.CreatedAt = DateTime.Now;
+            user.UpdatedAt = DateTime.Now; 
+            user.LastTokenIssueAt = DateTime.Now;
+            user.RoleId = 4;
+
+            // 4. Guardar en la base de datos
+            var createdUser = await _unitOfWork.Users.AddAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Usuario creado exitosamente con ID: {UserId}", createdUser.UserId);
+
+            // 5. Mapear a DTO y retornar
+            return _mapper.Map<UserDto>(createdUser);
+        }
+
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+    }
+    public async Task<bool> EmailExistsAsync(string email)
     {
-        // TODO: ESTUDIANTE - Implementar lógica
+        _logger.LogInformation("Verificando si el email existe: {Email}", email);
         throw new NotImplementedException("Método pendiente de implementación por el estudiante");
     }
+
 
     /// <summary>
     /// TODO: ESTUDIANTE - Implementar la actualización de un usuario
