@@ -308,32 +308,4 @@ public class UserService : IUserService
             throw;
         }
     }
-
-    public async Task<object> GetUserStatisticsAsync()
-    {
-        try
-        {
-            _logger.LogInformation("Obteniendo estadísticas de usuarios");
-
-            var allUsers = await _unitOfWork.Users.GetAllAsync();
-            var activeUsers = allUsers.ToList();
-            var totalUsers = activeUsers.Count;
-            var usersByRole = activeUsers
-                .GroupBy(u => u.RoleId)
-                .ToDictionary(g => g.Key, g => g.Count());
-            var usersLastMonth = activeUsers.Count(u => u.CreatedAt >= DateTime.UtcNow.AddMonths(-1));
-
-            return new
-            {
-                TotalUsers = totalUsers,
-                UsersByRole = usersByRole,
-                UsersLastMonth = usersLastMonth
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error obteniendo estadísticas de usuarios");
-            throw;
-        }
-    }
 }

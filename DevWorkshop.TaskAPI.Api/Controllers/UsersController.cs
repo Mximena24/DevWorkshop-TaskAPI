@@ -258,7 +258,7 @@ public class UsersController : ControllerBase
             return StatusCode(500, new ApiResponse<object>
             {
                 Success = false,
-                Message = "Ocurrió un error interno al actualizar el usuario.",
+                Message = $"Error interno: {ex.Message}",
                 Data = null
             });
         }
@@ -281,15 +281,15 @@ public class UsersController : ControllerBase
             });
 
         var deleted = await _userService.DeleteUserAsync(id);
-        var response = ApiResponse<bool>.SuccessResponse(
+
+        if (deleted)
+        {
+            var response = ApiResponse<bool>.SuccessResponse(
                 true,
                 "Usuario eliminado correctamente"
             );
-        if (deleted)
-            return CreatedAtAction(
-                nameof(GetUserById),
-                response
-            );
+            return Ok(response);
+        }
 
         return NotFound(new ApiResponse<object>
         {
@@ -298,7 +298,6 @@ public class UsersController : ControllerBase
             Data = null
         });
     }
-
 
     [HttpGet("getByEmail/{email}")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
@@ -352,36 +351,8 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<UserDto>>
         {
             Success = true,
-            Message = "Usuarios obtenidos correctamente.",
+            Message = "Usuarios no existentes.",
             Data = users
         });
-    }
-
-
-    [HttpGet("getStatistics")]
-    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-    [ProducesResponseType(typeof(ApiResponse<object>), 500)]
-    public async Task<ActionResult<ApiResponse<object>>> GetUserStatistics()
-    {
-        try
-        {
-            var statistics = await _userService.GetUserStatisticsAsync();
-
-            return Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Message = "Estadísticas obtenidas correctamente.",
-                Data = statistics
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<object>
-            {
-                Success = false,
-                Message = $"Error interno: {ex.Message}",
-                Data = null
-            });
-        }
     }
 }

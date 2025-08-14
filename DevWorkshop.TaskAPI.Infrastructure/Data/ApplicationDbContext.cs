@@ -12,6 +12,8 @@ public class ApplicationDbContext : DbContext
     {
     }
 
+
+
     /// <summary>
     /// Conjunto de entidades de usuarios
     /// </summary>
@@ -64,6 +66,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.LastTokenIssueAt)
                 .HasColumnType("datetime2(7)");
 
+
+
             // Relación con Role
             entity.HasOne(e => e.Role)
                 .WithMany(r => r.Users)
@@ -89,20 +93,20 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<TaskItem>(entity =>
         {
             entity.HasKey(e => e.TaskId);
-            
+
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(200);
-            
+
             entity.Property(e => e.Description)
                 .HasMaxLength(1000);
-            
+
             entity.Property(e => e.Status)
                 .HasConversion<int>();
-            
+
             entity.Property(e => e.Priority)
                 .HasConversion<int>();
-            
+
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 

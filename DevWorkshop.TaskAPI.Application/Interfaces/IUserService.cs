@@ -59,7 +59,5 @@ public interface IUserService
 
     Task<IEnumerable<UserDto>> GetUsersByRoleAsync(int roleId);
 
-    // Obtiene estadísticas generales de usuarios
-    Task<object> GetUserStatisticsAsync();
 
 }

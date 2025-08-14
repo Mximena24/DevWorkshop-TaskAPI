@@ -11,7 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configuración de la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+
 
 // Configuración de AutoMapper
 builder.Services.AddAutoMapper(typeof(DevWorkshop.TaskAPI.Application.Mappings.MappingProfile));
