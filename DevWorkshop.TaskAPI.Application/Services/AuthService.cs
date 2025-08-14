@@ -32,50 +32,50 @@ public class AuthService : IAuthService
     {
         try
         {
-            //_logger.LogInformation("Iniciando proceso de autenticación para email: {Email}", loginDto.Email);
+            _logger.LogInformation("Iniciando proceso de autenticación para email: {Email}", loginDto.Email);
 
-            //// Buscar usuario por email
-            //var user = await _userService.GetUserByEmailAsync(loginDto.Email);
-            //if (user == null)
-            //{
-            //    _logger.LogWarning("Usuario no encontrado con email: {Email}", loginDto.Email);
-            //    return null;
-            //}
+            // Buscar usuario por email
+            var user = await _userService.GetUserByEmailAsync(loginDto.Email);
+            if (user == null)
+            {
+                _logger.LogWarning("Usuario no encontrado con email: {Email}", loginDto.Email);
+                return null;
+            }
 
-            //// Obtener entidad completa para verificar contraseña
-            //var userEntity = await _userService.GetUserEntityByEmailAsync(loginDto.Email);
-            //if (userEntity == null)
-            //{
-            //    _logger.LogWarning("Entidad de usuario no encontrada para email: {Email}", loginDto.Email);
-            //    return null;
-            //}
+            // Obtener entidad completa para verificar contraseña
+            var userEntity = await _userService.GetUserEntityByEmailAsync(loginDto.Email);
+            if (userEntity == null)
+            {
+                _logger.LogWarning("Entidad de usuario no encontrada para email: {Email}", loginDto.Email);
+                return null;
+            }
 
-            //// Verificar contraseña
-            //if (!VerifyPassword(loginDto.Password, userEntity.PasswordHash))
-            //{
-            //    _logger.LogWarning("Contraseña incorrecta para usuario: {Email}", loginDto.Email);
-            //    return null;
-            //}
+            // Verificar contraseña
+            if (!VerifyPassword(loginDto.Password, userEntity.PasswordHash))
+            {
+                _logger.LogWarning("Contraseña incorrecta para usuario: {Email}", loginDto.Email);
+                return null;
+            }
 
-            //// Generar token JWT
-            //var token = GenerateJwtToken(user.UserId, user.Email, user.RoleName);
-            //var expirationTime = DateTime.UtcNow.AddMinutes(GetJwtExpirationMinutes());
+            // Generar token JWT
+            var token = GenerateJwtToken(user.UserId, user.Email, user.RoleName);
+            var expirationTime = DateTime.UtcNow.AddMinutes(GetJwtExpirationMinutes());
 
-            //// Crear respuesta de autenticación
-            //var authResponse = new AuthResponseDto
-            //{
-            //    Token = token,
-            //    ExpiresAt = expirationTime,
-            //    User = new UserInfo
-            //    {
-            //        UserId = user.UserId,
-            //        FullName = user.FullName,
-            //        Email = user.Email
-            //    }
-            //};
+            // Crear respuesta de autenticación
+            var authResponse = new AuthResponseDto
+            {
+                Token = token,
+                ExpiresAt = expirationTime,
+                User = new UserInfo
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Email = user.Email
+                }
+            };
 
             _logger.LogInformation("Autenticación exitosa para usuario: {Email}", loginDto.Email);
-            return null;
+            return authResponse;
         }
         catch (Exception ex)
         {
